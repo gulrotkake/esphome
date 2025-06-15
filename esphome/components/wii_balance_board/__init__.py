@@ -2,6 +2,7 @@ import esphome.codegen as cg
 from esphome.components import sensor
 import esphome.config_validation as cv
 from esphome.const import (
+    CONF_BATTERY_LEVEL,
     CONF_ID,
     CONF_NAME,
     DEVICE_CLASS_BATTERY,
@@ -22,7 +23,6 @@ AUTO_LOAD = ["sensor"]
 CONF_WEIGHT = "weight"
 CONF_TEMPERATURE = "temperature_sensor"
 CONF_REF_TEMPERATURE = "reference_temperature_sensor"
-CONF_BATTERY_LEVEL = "battery_level"
 CONF_STDDEV = "standard_deviation"
 
 wii_balance_board_ns = cg.esphome_ns.namespace("wii_balance_board")
