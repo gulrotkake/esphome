@@ -107,9 +107,11 @@ void WiiBalanceBoard::setup() {
   wii.onEvent([this](const detail::WiiEvent &event) {
     std::visit(overloaded{
                    [this](const detail::ScanStarted &) {
+                     syncing_->publish_state(true);
                      // digitalWrite(LED, LOW);
                    },
                    [this](const detail::ScanStopped &) {
+                     syncing_->publish_state(false);
                      // digitalWrite(LED, HIGH);
                    },
                    [this](const detail::BalanceBoardConnected &board) {
@@ -147,6 +149,7 @@ void WiiBalanceBoard::set_reference_temperature_sensor(sensor::Sensor *reference
 void WiiBalanceBoard::set_battery_level(sensor::Sensor *battery_level) { battery_level_ = battery_level; }
 void WiiBalanceBoard::set_weight(sensor::Sensor *weight) { weight_ = weight; }
 void WiiBalanceBoard::set_stddev(float stddev) { this->std_dev_ = stddev; }
+void WiiBalanceBoard::set_syncing(binary_sensor::BinarySensor *syncing) { this->syncing_ = syncing; }
 
 }  // namespace wii_balance_board
 }  // namespace esphome

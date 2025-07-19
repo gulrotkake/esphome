@@ -1,5 +1,5 @@
 import esphome.codegen as cg
-from esphome.components import sensor
+from esphome.components import binary_sensor, sensor
 import esphome.config_validation as cv
 from esphome.const import (
     CONF_BATTERY_LEVEL,
@@ -9,6 +9,7 @@ from esphome.const import (
     DEVICE_CLASS_TEMPERATURE,
     DEVICE_CLASS_WEIGHT,
     ICON_BATTERY,
+    ICON_BLUETOOTH,
     ICON_SCALE,
     ICON_THERMOMETER,
     STATE_CLASS_MEASUREMENT,
@@ -17,9 +18,10 @@ from esphome.const import (
     UNIT_PERCENT,
 )
 
-DEPENDENCIES = ["sensor"]
-AUTO_LOAD = ["sensor"]
+DEPENDENCIES = ["binary_sensor", "sensor"]
+AUTO_LOAD = ["binary_sensor", "sensor"]
 
+CONF_SYNCING = "syncing"
 CONF_WEIGHT = "weight"
 CONF_TEMPERATURE = "temperature_sensor"
 CONF_REF_TEMPERATURE = "reference_temperature_sensor"
@@ -79,6 +81,14 @@ CONFIG_SCHEMA = cv.Schema(
             state_class=STATE_CLASS_MEASUREMENT,
             device_class=DEVICE_CLASS_WEIGHT,
         ),
+        cv.Optional(
+            CONF_SYNCING,
+            default={
+                CONF_NAME: "Balance Board Syncing",
+            },
+        ): binary_sensor.binary_sensor_schema(
+            icon=ICON_BLUETOOTH,
+        ),
         cv.Optional(CONF_STDDEV, default=0.4): cv.float_range(0, 5),
     }
 )
@@ -102,6 +112,9 @@ async def to_code(config):
 
     weight = await sensor.new_sensor(config.get(CONF_WEIGHT))
     cg.add(var.set_weight(weight))
+
+    syncing = await binary_sensor.new_binary_sensor(config.get(CONF_SYNCING))
+    cg.add(var.set_syncing(syncing))
 
     if stddev := config.get(CONF_STDDEV):
         cg.add(var.set_stddev(stddev))
