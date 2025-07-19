@@ -4,6 +4,7 @@
 #include "esphome/components/button/button.h"
 #include "esphome/components/sensor/sensor.h"
 #include "wii.h"
+#include "esphome/components/binary_sensor/binary_sensor.h"
 
 #include "task_queue.h"
 #include <unordered_map>
@@ -33,6 +34,7 @@ class WiiBalanceBoard : public Component {
   void set_reference_temperature_sensor(sensor::Sensor *reference_temperature_sensor);
   void set_battery_level(sensor::Sensor *battery_level);
   void set_weight(sensor::Sensor *weight);
+  void set_syncing(binary_sensor::BinarySensor *syncing);
   void set_stddev(float stddev);
 
  protected:
@@ -51,6 +53,7 @@ class WiiBalanceBoard : public Component {
   sensor::Sensor *reference_temperature_sensor_{nullptr};
   sensor::Sensor *battery_level_{nullptr};
   sensor::Sensor *weight_{nullptr};
+  binary_sensor::BinarySensor *syncing_{nullptr};
 };
 
 }  // namespace wii_balance_board
