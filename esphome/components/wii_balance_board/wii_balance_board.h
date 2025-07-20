@@ -36,6 +36,7 @@ class WiiBalanceBoard : public Component {
   void set_weight(sensor::Sensor *weight);
   void set_syncing(binary_sensor::BinarySensor *syncing);
   void set_stddev(float stddev);
+  void set_led_pin(int led_pin);
 
  protected:
   void board_connected(uint16_t handle);
@@ -49,6 +50,8 @@ class WiiBalanceBoard : public Component {
   detail::TaskQueue queue;
 
   float std_dev_;
+  int led_pin_;
+
   sensor::Sensor *temperature_sensor_{nullptr};
   sensor::Sensor *reference_temperature_sensor_{nullptr};
   sensor::Sensor *battery_level_{nullptr};
