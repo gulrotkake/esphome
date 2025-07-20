@@ -11,6 +11,20 @@ namespace wii_balance_board {
 
 static const char *TAG = "wii_balance_board.component";
 
+uint8_t interpret_battery_level(uint8_t batteryLevel) {
+  if (batteryLevel >= 0x8d) {
+    return 100;
+  } else if (batteryLevel >= 0x7d) {
+    return 75;
+  } else if (batteryLevel >= 0x78) {
+    return 50;
+  } else if (batteryLevel >= 0x6A) {
+    return 25;
+  } else {
+    return 0;
+  }
+}
+
 WiiBalanceBoard::WiiBalanceBoard() : wii(&bluetooth), std_dev_(0.4) {}
 
 void WiiBalanceBoard::board_connected(uint16_t handle) {
@@ -122,8 +136,9 @@ void WiiBalanceBoard::setup() {
                    },
                    [this](const detail::BalanceBoardDisconnected &board) { this->board_disconnected(board.handle); },
                    [this](const detail::BalanceBoardData &data) {
-                     this->board_sample(data.handle, data.batteryLevel, data.referenceTemperature, data.temperature,
-                                        data.tr, data.br, data.tl, data.bl);
+                     this->board_sample(data.handle, interpret_battery_level(data.batteryLevel),
+                                        data.referenceTemperature, data.temperature, data.tr, data.br, data.tl,
+                                        data.bl);
                    },
                },
                event);
