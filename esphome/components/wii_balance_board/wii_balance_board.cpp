@@ -61,7 +61,7 @@ void WiiBalanceBoard::board_sample(uint16_t handle, uint8_t battery, uint8_t ref
   sample.battery = battery;
   sample.temperature = temperature;
 
-  float totalWeight = topRightLoad + bottomRightLoad + topLeftLoad + bottomLeftLoad;
+  float totalWeight = (topRightLoad + bottomRightLoad + topLeftLoad + bottomLeftLoad) / 1000;
   float adjusted = (.999 * totalWeight * (1.0 - .0007 * (sample.temperature - sample.referenceTemperature)));
 
   // Ignore small samples (noise), in std dev calculation.
