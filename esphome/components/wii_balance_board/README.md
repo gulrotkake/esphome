@@ -7,7 +7,7 @@ external_components:
   - source:
       type: git
       url: https://github.com/gulrotkake/esphome
-      ref: dev
+      ref: balance-board
     components: [ wii_balance_board ]
 
 wii_balance_board:
@@ -16,15 +16,10 @@ wii_balance_board:
 
 button:
   - platform: template
-    name: "Start Sync"  # Optional fallback if not using C++
+    name: "Start Sync"
     on_press:
       then:
         - lambda: 'id(board)->sync(true);'
-  - platform: template
-    name: "Stop Sync"  # Optional fallback if not using C++
-    on_press:
-      then:
-        - lambda: 'id(board)->sync(false);'
 ```
 
 ## Contributions
