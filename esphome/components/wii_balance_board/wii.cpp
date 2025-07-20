@@ -219,7 +219,6 @@ Wii::Wii(Bluetooth *bt) : bluetooth(bt) {
                    },
                    [bt](const HCIRemoteName &result) {
                      log_i("Found %s %s", result.remoteName.data(), formatHex((uint8_t *) &result.inquiry.bdaddr, 6));
-                     // FIXME Set back to wiimote for wiimote testing
                      if (result.remoteName == "Nintendo RVL-WBC-01") {
                        bt->connect(result.inquiry);
                      }

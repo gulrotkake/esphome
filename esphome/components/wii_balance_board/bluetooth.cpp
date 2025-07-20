@@ -621,7 +621,6 @@ struct Bluetooth::Impl {
 
     sendL2DataChannel(connection_handle, 0x0001, data, 8);
 
-    // FIX the key to be concise independent on who is connecting.
     connections.emplace(L2CapConnection{
         .localCid = g_localCid,
         .psm = psm,
