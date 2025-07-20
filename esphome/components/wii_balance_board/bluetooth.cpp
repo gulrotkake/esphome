@@ -1,4 +1,5 @@
 #include "bluetooth.h"
+#include "esphome/core/log.h"
 
 #include <esp32-hal-bt.h>
 #include <esp_bt.h>
@@ -13,8 +14,10 @@
 
 #define CHECK_RESULT(x) \
   if (!x) { \
-    log_e(#x " failed!"); \
+    ESP_LOGE(TAG, #x " failed!"); \
   }
+
+static const char *TAG = "bluetooth";
 
 static_assert(CONFIG_BT_ENABLED && CONFIG_BLUEDROID_ENABLED,
               "Bluetooth is not enabled! Please run `make menuconfig` to and enable it");
@@ -101,7 +104,7 @@ struct Bluetooth::Impl {
   void step() {
     while (esp_vhci_host_check_send_available()) {
       if (auto txData = txBuffer.read(0)) {
-        log_d("\033[1;42mTX>\033[0m: %s", formatHex(txData.data(), txData.size()));
+        ESP_LOGD(TAG, "TX>: %s", formatHex(txData.data(), txData.size()));
         esp_vhci_host_send_packet(txData.data(), txData.size());
       } else {
         break;
@@ -126,12 +129,12 @@ struct Bluetooth::Impl {
             uint8_t broadcastFlag = (rxData[2] & 0xC0) >> 6;       // Broadcast_Flag
 
             if (packetBoundaryFlag != 0b10) {
-              log_e("unsupported packet_boundary_flag = 0b%02B", packetBoundaryFlag);
+              ESP_LOGE(TAG, "unsupported packet_boundary_flag = 0b%02B", packetBoundaryFlag);
               break;
             }
 
             if (broadcastFlag != 0b00) {
-              log_e("unsupported broadcast_flag 0b%02B", broadcastFlag);
+              ESP_LOGE(TAG, "unsupported broadcast_flag 0b%02B", broadcastFlag);
               break;
             }
 
@@ -145,14 +148,8 @@ struct Bluetooth::Impl {
           typeColor = 41;
           break;
       }
-      /*
-      if (rxData.size() > 2) {
-          if (rxData[0] != 0x04 || rxData[1] != 0x02) {
-              log_d("\033[1;%dm[%s] [core:%d]\033[0m \033[1;43mRX>\033[0m: %s", typeColor, type, xPortGetCoreID(),
-                    formatHex(rxData.data(), rxData.size()));
-          }
-      }
-      */
+
+      ESP_LOGD(TAG, "[%s] RX> %s", type, formatHex(rxData.data(), rxData.size()));
     }
   }
 
@@ -162,34 +159,34 @@ struct Bluetooth::Impl {
       if (data[3] == 0x00) {
         CHECK_RESULT(enqueue_cmd_read_bd_addr(txBuffer));
       } else {
-        log_e("Reset failed");
+        ESP_LOGE(TAG, "Reset failed");
       }
     } else if (data[1] == 0x09 && data[2] == 0x10) {  // read_bd_addr
       if (data[3] == 0x00) {                          // OK
         char name[] = "ESP32-BT-WIIP";
         CHECK_RESULT(enqueue_cmd_write_local_name(txBuffer, (uint8_t *) name, sizeof(name)));
       } else {
-        log_e("read_bd_addr failed.");
+        ESP_LOGE(TAG, "read_bd_addr failed.");
       }
     } else if (data[1] == 0x13 && data[2] == 0x0C) {  // write_local_name
       if (data[3] == 0x00) {                          // OK
         uint8_t cod[3] = {0x04, 0x05, 0x00};
         CHECK_RESULT(enqueue_cmd_write_class_of_device(txBuffer, cod));
       } else {
-        log_e("write_local_name failed.");
+        ESP_LOGE(TAG, "write_local_name failed.");
       }
     } else if (data[1] == 0x24 && data[2] == 0x0C) {  // write_class_of_device
       if (data[3] == 0x00) {                          // OK
         CHECK_RESULT(enqueue_cmd_write_scan_enable(txBuffer, 3));
       } else {
-        log_e("write_class_of_device failed.");
+        ESP_LOGE(TAG, "write_class_of_device failed.");
       }
     } else if (data[1] == 0x1A && data[2] == 0x0C) {  // write_scan_enable
       if (data[3] == 0x00) {                          // OK
         initialized = true;
         readyListener(bluetooth);
       } else {
-        log_e("write_scan_enable failed.");
+        ESP_LOGE(TAG, "write_scan_enable failed.");
       }
     }
   }
@@ -213,7 +210,6 @@ struct Bluetooth::Impl {
   }
 
   void handleHCIInqueryComplete(uint8_t *data, size_t len) {
-    log_d("Scan complete");
     hciListener(bluetooth, HCIInquiryComplete{});
     discovered.clear();
   }
@@ -261,9 +257,6 @@ struct Bluetooth::Impl {
     uint64_t bdaddr = *(const uint64_t *) (data) &0xFFFFFFFFFFFFull;
     uint32_t cod = (data[6] << 16) | (data[7] << 8) | data[8];
     uint8_t link_type = data[9];
-    log_d("   Connection request:");
-    log_d("   Class_of_Device = %02X %02X %02X", data[6], data[7], data[8]);
-    log_d("   Link type %02X", link_type);
 
     if (connectionRequestListener(bluetooth, HCIConnectionRequest{.bdaddr = bdaddr, .classOfDevice = cod})) {
       CHECK_RESULT(enqueue_cmd_accept_connection(txBuffer, bdaddr));
@@ -329,7 +322,7 @@ struct Bluetooth::Impl {
 
   void sendHCIScan() {
     if (!initialized) {
-      log_e("Cannot sync, bluetooth not initialized");
+      ESP_LOGE(TAG, "Cannot sync, bluetooth not initialized");
       return;
     }
 
@@ -340,7 +333,7 @@ struct Bluetooth::Impl {
 
   void sendHCIScanCancel() {
     if (!initialized) {
-      log_e("Cannot sync, bluetooth not initialized");
+      ESP_LOGE(TAG, "Cannot sync, bluetooth not initialized");
       return;
     }
 
@@ -363,7 +356,7 @@ struct Bluetooth::Impl {
 
   void sendHCIPINReply(uint64_t bdaddr, uint8_t *pinData, size_t len) {
     if (len > 16) {
-      log_e("PIN too long, max 16 characters");
+      ESP_LOGE(TAG, "PIN too long, max 16 characters");
       return;
     }
     CHECK_RESULT(enqueue_cmd_pin_reply(txBuffer, bdaddr, pinData, len));
@@ -379,18 +372,18 @@ struct Bluetooth::Impl {
     uint16_t flags = (data[7] << 8) | data[6];
 
     if (flags != 0x0000) {
-      log_e("Unsupported flags %04X", flags);
+      ESP_LOGE(TAG, "Unsupported flags %04X", flags);
       return;
     }
 
     if (len != 0x08) {
-      log_e("Unexpected configuration length %04X", len);
+      ESP_LOGE(TAG, "Unexpected configuration length %04X", len);
       return;
     }
 
     L2CapConnection *connection = connections.findLocal(handle, destinationCid);
     if (connection == nullptr) {
-      log_w("Unexpected configuration requestion");
+      ESP_LOGW(TAG, "Unexpected configuration requestion");
       return;
     }
 
@@ -443,7 +436,7 @@ struct Bluetooth::Impl {
       // Send command reject rsp
       return;
     }
-    log_d("Sending disconnect response");
+    ESP_LOGD(TAG, "Sending disconnect response");
     if (connection->remoteCid == sourceCid) {
       uint8_t response[] = {
           0x07,        // Disconnect response
@@ -459,7 +452,7 @@ struct Bluetooth::Impl {
       sendL2DataChannel(handle, 0x0001, response, 8);
       connections.remove(*connection);
     } else {
-      log_d("Mismatch");
+      ESP_LOGD(TAG, "Mismatch");
     }
   }
 
@@ -473,7 +466,7 @@ struct Bluetooth::Impl {
 
     auto *connection = connections.findLocal(handle, sourceCid);
     if (connection == nullptr) {
-      log_w("Received unexpected L2Cap Connection response, ignoring");
+      ESP_LOGW(TAG, "Received unexpected L2Cap Connection response, ignoring");
       return;
     }
 
@@ -633,7 +626,7 @@ struct Bluetooth::Impl {
     uint32_t hp = (handle << 16) | psm;
     auto *connection = connections.findPsm(handle, psm);
     if (connection == nullptr) {
-      log_e("Cannot send L2 data, handle/psm connection not found");
+      ESP_LOGE(TAG, "Cannot send L2 data, handle/psm connection not found");
       return;
     }
     sendL2DataChannel(handle, connection->remoteCid, data, len);
@@ -676,7 +669,7 @@ static const esp_vhci_host_callback_t callback = {sendReady, recv};
 
 Bluetooth::Bluetooth() : m_impl(std::make_unique<Bluetooth::Impl>(this)) {
   if (!btStart()) {
-    log_e("Failed to initialize Bluetooth");
+    ESP_LOGE(TAG, "Failed to initialize Bluetooth");
     return;
   }
 
@@ -686,7 +679,7 @@ Bluetooth::Bluetooth() : m_impl(std::make_unique<Bluetooth::Impl>(this)) {
       memcpy(buffer.data(), data, len);
       return ESP_OK;
     }
-    log_w("Buffer error, dropping packets.");
+    ESP_LOGW(TAG, "Buffer error, dropping packets.");
     return ESP_OK;
   };
 
@@ -694,7 +687,7 @@ Bluetooth::Bluetooth() : m_impl(std::make_unique<Bluetooth::Impl>(this)) {
   m_impl->sendHCIReset();
 }
 
-Bluetooth::~Bluetooth() { log_d("Shut down"); }
+Bluetooth::~Bluetooth() { ESP_LOGD(TAG, "Shut down"); }
 
 void Bluetooth::onReady(const std::function<void(Bluetooth *)> &listener) { m_impl->readyListener = listener; }
 
