@@ -14,6 +14,8 @@ struct HCIInquiryResult {
   uint16_t clkOffset;
 };
 
+struct HCIInquiryStarted {};
+
 struct HCIInquiryComplete {};
 
 struct HCIConnectionEstablished {
@@ -86,8 +88,8 @@ struct ACLData {
   size_t len;
 };
 
-using HCIEvent = std::variant<HCIInquiryComplete, HCIInquiryResult, HCIConnectionEstablished, HCIConnectionFailed,
-                              HCIDisconnected, HCIRemoteName, HCILinkKeyRequest, HCIPINRequest>;
+using HCIEvent = std::variant<HCIInquiryStarted, HCIInquiryComplete, HCIInquiryResult, HCIConnectionEstablished,
+                              HCIConnectionFailed, HCIDisconnected, HCIRemoteName, HCILinkKeyRequest, HCIPINRequest>;
 using ACLEvent = std::variant<ACLDisconnected, ACLConnectionFailed, ACLConnectionEstablished, ACLData>;
 
 class Bluetooth {

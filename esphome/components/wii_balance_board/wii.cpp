@@ -210,10 +210,8 @@ Wii::Wii(Bluetooth *bt) : bluetooth(bt) {
 
   bt->onHCIEvent([this](Bluetooth *bt, const HCIEvent &event) {
     std::visit(overloaded{
-                   [this](const HCIInquiryComplete &) {
-                     // Scan complete
-                     this->eventListener(ScanStopped{});
-                   },
+                   [this](const HCIInquiryStarted &) { this->eventListener(ScanStarted{}); },
+                   [this](const HCIInquiryComplete &) { this->eventListener(ScanStopped{}); },
                    [bt](const HCIInquiryResult &result) {
                      if (result.classOfDevice == 0x042500) {
                        bt->requestRemoteName(result);
@@ -308,12 +306,7 @@ Wii::Wii(Bluetooth *bt) : bluetooth(bt) {
 
 Wii::~Wii() {}
 
-void Wii::sync(bool enable) {
-  if (enable) {
-    this->eventListener(ScanStarted{});
-  }
-  bluetooth->scan(enable);
-}
+void Wii::sync(bool enable) { bluetooth->scan(enable); }
 
 void Wii::step() { bluetooth->process(); }
 

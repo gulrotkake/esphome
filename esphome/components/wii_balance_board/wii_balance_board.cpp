@@ -138,7 +138,6 @@ void WiiBalanceBoard::loop() {
 void WiiBalanceBoard::sync(bool enable) {
   ESP_LOGI(TAG, enable ? "Starting scan" : "Stopping scan");
   wii.sync(enable);
-  syncing_->publish_state(enable);
 }
 
 void WiiBalanceBoard::dump_config() { ESP_LOGCONFIG(TAG, "Wii Balance Board"); }
