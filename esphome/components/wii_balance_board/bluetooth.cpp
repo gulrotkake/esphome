@@ -111,7 +111,7 @@ struct Bluetooth::Impl {
       }
     }
 
-    if (auto rxData = rxBuffer.read(portMAX_DELAY)) {
+    if (auto rxData = rxBuffer.read(0)) {
       const char *type;
       uint8_t typeColor;
       switch (rxData[0]) {
