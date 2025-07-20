@@ -104,6 +104,8 @@ void WiiBalanceBoard::board_sample(uint16_t handle, uint8_t battery, uint8_t ref
 }
 
 void WiiBalanceBoard::setup() {
+  bluetooth.onReady([](auto) { ESP_LOGI(TAG, "Bluetooth initialized"); });
+
   wii.onEvent([this](const detail::WiiEvent &event) {
     std::visit(overloaded{
                    [this](const detail::ScanStarted &) {
