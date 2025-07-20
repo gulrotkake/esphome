@@ -26,9 +26,9 @@ static_assert(CONFIG_CLASSIC_BT_ENABLED, "Board does not support Bluetooth BR/ED
 namespace esphome::wii_balance_board::detail {
 
 static uint8_t g_identifier = 1;
-static uint16_t g_localCid = 0x0040;
 
 struct L2CapConnection {
+  uint16_t handle;
   uint16_t localCid;
   uint16_t psm;
   uint16_t remoteCid;
@@ -49,16 +49,27 @@ class ConnectionStore {
   L2CapConnection *findLocal(uint16_t handle, uint16_t localCid) {
     auto itr = std::find_if(l2CapConnections.begin(), l2CapConnections.end(),
                             [handle, localCid](const L2CapConnection &connection) {
-                              return handle == handle && connection.localCid == localCid;
+                              return connection.handle == handle && connection.localCid == localCid;
                             });
     return &*itr;
   }
 
   L2CapConnection *findPsm(uint16_t handle, uint16_t psm) {
-    auto itr = std::find_if(
-        l2CapConnections.begin(), l2CapConnections.end(),
-        [handle, psm](const L2CapConnection &connection) { return handle == handle && connection.psm == psm; });
+    auto itr = std::find_if(l2CapConnections.begin(), l2CapConnections.end(),
+                            [handle, psm](const L2CapConnection &connection) {
+                              return connection.handle == handle && connection.psm == psm;
+                            });
     return &*itr;
+  }
+
+  uint16_t nextCid(uint16_t handle) {
+    uint16_t nextCid = 0x0040;
+    for (const auto &connection : l2CapConnections) {
+      if (handle == connection.handle) {
+        nextCid = std::max(nextCid, static_cast<uint16_t>(connection.localCid + 1));
+      }
+    }
+    return nextCid;
   }
 
   bool remove(L2CapConnection &connection) {
@@ -69,6 +80,11 @@ class ConnectionStore {
     }
     l2CapConnections.erase(itr, l2CapConnections.end());
     return true;
+  }
+
+  bool remove(uint16_t handle) {
+    auto cnt = std::erase_if(l2CapConnections, [handle](const L2CapConnection &e) { return e.handle == handle; });
+    return cnt > 0;
   }
 
   void emplace(L2CapConnection connection) { l2CapConnections.emplace_back(std::move(connection)); }
@@ -226,8 +242,10 @@ struct Bluetooth::Impl {
 
   void handleHCIDisconnect(uint8_t *data, size_t len) {
     uint8_t status = data[0];
+    uint16_t handle = data[2] << 8 | data[1];
     if (status == 0x00) {
-      hciListener(bluetooth, HCIDisconnected{.handle = (uint8_t) (data[2] << 8 | data[1]), .reason = data[3]});
+      hciListener(bluetooth, HCIDisconnected{.handle = handle, .reason = data[3]});
+      connections.remove(handle);
     }
   }
 
@@ -526,9 +544,10 @@ struct Bluetooth::Impl {
     uint16_t psm = (data[5] << 8) | data[4];
     bool accepted = aclConnectionRequestListener(
         bluetooth, ACLConnectionRequest{.handle = handle, .sourceCid = sourceCid, .psm = psm});
-    auto localCid = g_localCid++;
+    auto localCid = connections.nextCid(handle);
     if (accepted) {
       connections.emplace(L2CapConnection{
+          .handle = handle,
           .localCid = localCid,
           .psm = psm,
           .remoteCid = sourceCid,
@@ -609,20 +628,22 @@ struct Bluetooth::Impl {
   }
 
   void sendL2Connect(uint16_t connection_handle, uint16_t psm, uint16_t mtu) {
+    uint16_t localCid = connections.nextCid(connection_handle);
     uint8_t data[] = {0x02,          // CONNECTION REQUEST
                       g_identifier,  // Identifier
                       0x04,
                       0x00,  // Length:     0x0004
                       (uint8_t) (psm & 0xFF),
                       (uint8_t) (psm >> 8),
-                      (uint8_t) (g_localCid & 0xFF),
-                      (uint8_t) (g_localCid >> 8)};
+                      (uint8_t) (localCid & 0xFF),
+                      (uint8_t) (localCid >> 8)};
     uint16_t data_len = 8;
 
     sendL2DataChannel(connection_handle, 0x0001, data, 8);
 
     connections.emplace(L2CapConnection{
-        .localCid = g_localCid,
+        .handle = connection_handle,
+        .localCid = localCid,
         .psm = psm,
         .remoteCid = 0,
         .mtu = mtu,
@@ -630,7 +651,6 @@ struct Bluetooth::Impl {
         .remoteConfigured = false,
     });
     g_identifier++;
-    g_localCid++;
   }
 
   void sendL2Data(uint16_t handle, uint16_t psm, uint8_t *data, size_t len) {
