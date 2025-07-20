@@ -191,6 +191,16 @@ struct Bluetooth::Impl {
     }
   }
 
+  void handleHCICommandStatusEvent(uint8_t *data, size_t len) {
+    if (data[2] == 0x01 && data[3] == 0x04) {
+      if (data[0] == 0x00) {
+        hciListener(bluetooth, HCIInquiryStarted{});
+      } else {
+        log_e("Failed to start inquiry, error=%02X", data[0]);
+      }
+    }
+  }
+
   void handleHCIInqueryResult(uint8_t *data, size_t len) {
     uint8_t num = data[0];
     for (uint8_t i = 0; i < num; ++i) {
@@ -285,8 +295,10 @@ struct Bluetooth::Impl {
 
   void handleHCIEvent(uint8_t eventCode, uint8_t *data, size_t len) {
     switch (eventCode) {
+      case 0x0F:
+        handleHCICommandStatusEvent(data, len);
+        break;
       case 0x0E:
-        // Command complete event
         handleHCICommandComplete(data, len);
         break;
       case 0x02:
