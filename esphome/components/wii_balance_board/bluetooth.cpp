@@ -120,7 +120,7 @@ struct Bluetooth::Impl {
   void step() {
     while (esp_vhci_host_check_send_available()) {
       if (auto txData = txBuffer.read(0)) {
-        ESP_LOGD(TAG, "TX>: %s", formatHex(txData.data(), txData.size()));
+        // ESP_LOGD(TAG, "TX>: %s", formatHex(txData.data(), txData.size()));
         esp_vhci_host_send_packet(txData.data(), txData.size());
       } else {
         break;
@@ -165,7 +165,7 @@ struct Bluetooth::Impl {
           break;
       }
 
-      ESP_LOGD(TAG, "[%s] RX> %s", type, formatHex(rxData.data(), rxData.size()));
+      // ESP_LOGD(TAG, "[%s] RX> %s", type, formatHex(rxData.data(), rxData.size()));
     }
   }
 
