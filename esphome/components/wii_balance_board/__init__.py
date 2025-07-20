@@ -26,6 +26,7 @@ CONF_WEIGHT = "weight"
 CONF_TEMPERATURE = "temperature_sensor"
 CONF_REF_TEMPERATURE = "reference_temperature_sensor"
 CONF_STDDEV = "standard_deviation"
+CONF_LED_PIN = "led_pin"
 
 wii_balance_board_ns = cg.esphome_ns.namespace("wii_balance_board")
 WiiBalanceBoard = wii_balance_board_ns.class_("WiiBalanceBoard", cg.Component)
@@ -33,6 +34,7 @@ WiiBalanceBoard = wii_balance_board_ns.class_("WiiBalanceBoard", cg.Component)
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(WiiBalanceBoard),
+        cv.Optional(CONF_LED_PIN, default=-1): cv.int_,
         cv.Optional(
             CONF_TEMPERATURE,
             default={
@@ -115,6 +117,9 @@ async def to_code(config):
 
     syncing = await binary_sensor.new_binary_sensor(config.get(CONF_SYNCING))
     cg.add(var.set_syncing(syncing))
+
+    if led_pin := config.get(CONF_LED_PIN):
+        cg.add(var.set_led_pin(led_pin))
 
     if stddev := config.get(CONF_STDDEV):
         cg.add(var.set_stddev(stddev))

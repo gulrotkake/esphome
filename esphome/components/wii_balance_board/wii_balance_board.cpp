@@ -118,17 +118,25 @@ void WiiBalanceBoard::board_sample(uint16_t handle, uint8_t battery, uint8_t ref
 }
 
 void WiiBalanceBoard::setup() {
+  if (led_pin_ >= 0) {
+    pinMode(led_pin_, OUTPUT);
+    digitalWrite(led_pin_, HIGH);
+  }
   bluetooth.onReady([](auto) { ESP_LOGI(TAG, "Bluetooth initialized"); });
 
   wii.onEvent([this](const detail::WiiEvent &event) {
     std::visit(overloaded{
                    [this](const detail::ScanStarted &) {
                      syncing_->publish_state(true);
-                     // digitalWrite(LED, LOW);
+                     if (led_pin_ >= 0) {
+                       digitalWrite(led_pin_, LOW);
+                     }
                    },
                    [this](const detail::ScanStopped &) {
                      syncing_->publish_state(false);
-                     // digitalWrite(LED, HIGH);
+                     if (led_pin_ >= 0) {
+                       digitalWrite(led_pin_, HIGH);
+                     }
                    },
                    [this](const detail::BalanceBoardConnected &board) {
                      sync(false);
@@ -166,6 +174,7 @@ void WiiBalanceBoard::set_reference_temperature_sensor(sensor::Sensor *reference
 void WiiBalanceBoard::set_battery_level(sensor::Sensor *battery_level) { battery_level_ = battery_level; }
 void WiiBalanceBoard::set_weight(sensor::Sensor *weight) { weight_ = weight; }
 void WiiBalanceBoard::set_stddev(float stddev) { this->std_dev_ = stddev; }
+void WiiBalanceBoard::set_led_pin(int led_pin) { this->led_pin_ = led_pin; }
 void WiiBalanceBoard::set_syncing(binary_sensor::BinarySensor *syncing) { this->syncing_ = syncing; }
 
 }  // namespace wii_balance_board
