@@ -1,5 +1,13 @@
 # Wii Balance Board component
 
+Adds a balance board component to home assistant. More in depth documentation available [here](https://tightloop.io/homeassistant+balanceboard/index.html).
+
+## Requirements
+
+1. A balance board
+2. A home assistant setup
+3. An ESP32 device with support for BR/EDR.
+
 ## Sample Configuration
 
 ```
