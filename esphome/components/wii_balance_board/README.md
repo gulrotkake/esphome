@@ -1,6 +1,10 @@
-# Wii Balance Board component
+# Wii Balance Board ESPHome component
 
-Adds a balance board component to home assistant. More in depth documentation available [here](https://tightloop.io/homeassistant+balanceboard/index.html).
+Use a Wii Balance Board as a smart scale in Home Assistant.
+
+<img width="329" height="583" alt="image" src="https://github.com/user-attachments/assets/92ac038c-ad78-400b-9394-d109598193c5" />
+
+More in depth documentation available [here](https://tightloop.io/homeassistant+balanceboard/index.html).
 
 ## Requirements
 
