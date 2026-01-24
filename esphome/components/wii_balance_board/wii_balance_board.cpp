@@ -139,6 +139,10 @@ void WiiBalanceBoard::setup() {
                      }
                    },
                    [this](const detail::BalanceBoardConnected &board) {
+                     syncing_->publish_state(false);
+                     if (led_pin_ >= 0) {
+                       digitalWrite(led_pin_, HIGH);
+                     }
                      sync(false);
                      this->board_connected(board.handle);
                    },
