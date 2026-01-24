@@ -15,6 +15,15 @@ More in depth documentation available [here](https://tightloop.io/homeassistant+
 ## Sample Configuration
 
 ```
+esp32:
+  variant: esp32
+  board: esp32dev # Replace with your esp32 board
+  framework:
+    type: arduino
+    sdkconfig_options:
+      CONFIG_BT_ENABLED: y
+      CONFIG_BT_CLASSIC_ENABLED: y
+
 external_components:
   - source:
       type: git
